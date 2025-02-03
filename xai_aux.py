@@ -83,7 +83,7 @@ def simulate_noise_effect(df, num_feat, cat_feat, y, max_noise=1.5, step=0.05):
         
         pp = Pipeline([
                 ('PP', ColumnTransformer([
-                    ('cat', OneHotEncoder(handle_unknown='ignore', drop='first', min_frequency=20), cat_feat), 
+                    ('cat', OneHotEncoder(handle_unknown='ignore', drop='first', min_frequency=100), cat_feat), 
                     ('num', StandardScaler(), num_feat)],
                     #('num', 'passthrough', num_feat)], 
                     remainder='passthrough'
@@ -605,7 +605,7 @@ class CLFModels():
     def get_models(self):
         pp = Pipeline([
             ('PP', ColumnTransformer([
-                ('cat', OneHotEncoder(handle_unknown='ignore', drop='first', sparse_output=False, min_frequency=20), self.cat_feat), 
+                ('cat', OneHotEncoder(handle_unknown='ignore', drop='first', sparse_output=False, min_frequency=100), self.cat_feat), 
                 ('num', StandardScaler(), self.num_feat)], 
                 #('num', 'passthrough', self.num_feat)], 
                 remainder='passthrough'
@@ -626,14 +626,14 @@ class CLFModels():
 
         pp_np = Pipeline([
             ('PP', ColumnTransformer([
-                ('cat', OneHotEncoder(handle_unknown='ignore', sparse_output=False, min_frequency=20), [int(i) for i in self.cat_feat]),  #, drop='first'
+                ('cat', OneHotEncoder(handle_unknown='ignore', sparse_output=False, min_frequency=100), [int(i) for i in self.cat_feat]),  #, drop='first'
                 ('num', StandardScaler(), [int(i) for i in self.num_feat])], 
                 #('num', 'passthrough', [int(i) for i in self.num_feat])], 
                 remainder='passthrough'
                 )),
             ])
             
-        self.clf_lr_np = Pipeline([('PP', pp_np), ('clf', LogisticRegression(max_iter=1000))])
+        self.clf_lr_np = Pipeline([('PP', pp_np), ('clf', LogisticRegression(max_iter=1000))]) # numpy pipeline
         self.clf_lr_np.fit(self.df_train.values, self.y_train)
 
         # PYMC
@@ -676,12 +676,13 @@ class CLFModels():
 
 
 class CFCalculations(CLFModels):
-    def __init__(self, df_train, y_train, df_test, y_test, cat_feat, num_feat, polytopes):
+    def __init__(self, df_train, y_train, df_test, y_test, cat_feat, num_feat, polytopes, do_marg=True):
         super().__init__(df_train, y_train, df_test, y_test, cat_feat, num_feat)  # Initialize the base class
         self.model_stats, self.models, self.cms = self.get_models()  # Train and retrieve models and associated data
         self.cat_feat = cat_feat
         self.num_feat = num_feat
         self.polytopes = polytopes
+        self.do_marg = do_marg
 
     def get_cfs(self):
         # Initialize the counterfactual handler
@@ -698,7 +699,8 @@ class CFCalculations(CLFModels):
         
         # Execute counterfactual methods for logistic regression
         handler.execute('lr', 'skl', clf=self.clf_lr)
-        handler.execute('lr', 'blr_marg', samples=self.samples)
+        if self.do_marg:
+            handler.execute('lr', 'blr_marg', samples=self.samples)
         handler.execute('lr', 'blr_mean', samples=self.samples)
         handler.execute(
             'lr', 'nice',
