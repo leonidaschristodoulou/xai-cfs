@@ -5,6 +5,7 @@ from scipy.optimize import minimize
 from scipy.special import expit
 import pandas as pd
 import seaborn as sns
+from collections import defaultdict
 
 import random
 import string
@@ -473,14 +474,23 @@ class CFFunctionHandler:
 
     def func_lr_rl(self, clf, df_in, categorical_names, numerical_names, X_train, y_train, X_test, y_test):
         print('Working on lr RL')
-        category_map = {i:list(df_in[str(i)].unique()) for i in range(len(categorical_names))}
-        out = generate_rl_counterfactuals(X_train, y_train, X_test, y_test, categorical_names, numerical_names, category_map, clf,'sk')
+        self.category_map = defaultdict(list)
+        features = clf[0].named_steps['PP'].named_transformers_['cat'].get_feature_names_out()
+        for feature in features:
+            index, category = feature.split("_", 1)  # Split at first underscore
+            self.category_map[int(index[1])].append(category)  # Convert index to int and store
+            #category_map[index].append(category)  # Convert index to int and store
+
+        # Convert defaultdict to regular dict
+        self.category_map = dict(self.category_map)
+        #category_map = {i:list(df_in[str(i)].unique()) for i in range(len(categorical_names))}
+        out = generate_rl_counterfactuals(X_train, y_train, X_test, y_test, categorical_names, numerical_names, self.category_map, clf,'sk')
         return out.data['cf']['X']
     
     def func_rf_rl(self, clf, df_in, categorical_names, numerical_names, X_train, y_train, X_test, y_test):
         print('Working on rf RL')
-        category_map = {i:list(df_in[str(i)].unique()) for i in range(len(categorical_names))}
-        out = generate_rl_counterfactuals(X_train, y_train, X_test, y_test, categorical_names, numerical_names, category_map, clf,'sk')
+        #category_map = {i:list(df_in[str(i)].unique()) for i in range(len(categorical_names))}
+        out = generate_rl_counterfactuals(X_train, y_train, X_test, y_test, categorical_names, numerical_names, self.category_map, clf,'sk')
         return out.data['cf']['X']
     
     def func_tf_rl(self, clf, df_in, categorical_names, numerical_names, X_train, y_train, X_test, y_test):
@@ -869,10 +879,11 @@ class CFCalculations(CLFModels):
                             ('lr', 'skl'), 
                             'linear model')
 
-        process_linear_model(('lr', 'blr_marg'), 
-                            self.samples, 
-                            ('lr', 'blr_marg'), 
-                            'bayesian linear model')
+        if self.do_marg:
+            process_linear_model(('lr', 'blr_marg'), 
+                                self.samples, 
+                                ('lr', 'blr_marg'), 
+                                'bayesian linear model')
 
         process_linear_model(('lr', 'blr_mean'), 
                              self.samples.mean(axis=1), 

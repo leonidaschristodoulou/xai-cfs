@@ -7,6 +7,8 @@ from alibi.models.tensorflow import ADULTEncoder, ADULTDecoder
 
 from sklearn.exceptions import NotFittedError
 
+from collections import defaultdict
+
 # Define the function
 def generate_rl_counterfactuals(X_train, y_train, X_test, y_test, categorical_ids, numerical_ids, category_map, clf, model_type):
 
@@ -96,15 +98,8 @@ def generate_rl_counterfactuals(X_train, y_train, X_test, y_test, categorical_id
         #     X[:, :len(numerical_ids)].astype(np.float32)
         # ])
 
-    # Extract the category map
-    category_map = {}
-    for idx, cat_id in enumerate(categorical_ids):
-        encoder = pp.named_steps['PP'].named_transformers_['cat']
-        categories = encoder.categories_[idx]
-        category_map[cat_id] = categories.tolist()
 
     feature_names = list(range(X_train.shape[1]))
-
     # Initialize the explainer
     explainer = CounterfactualRLTabular(
         predictor=predictor,
