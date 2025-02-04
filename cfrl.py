@@ -30,7 +30,7 @@ def generate_rl_counterfactuals(X_train, y_train, X_test, y_test, categorical_id
     EPOCHS = 50
     HIDDEN_DIM = 128
     LATENT_DIM = 15
-
+    print(categorical_ids, numerical_ids)
     # Define output dimensions
     OUTPUT_DIMS = [len(numerical_ids)]
     OUTPUT_DIMS += [len(category_map[cat_id]) for cat_id in categorical_ids]

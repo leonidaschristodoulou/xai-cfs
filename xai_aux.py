@@ -711,9 +711,12 @@ class CFCalculations(CLFModels):
         
         # Execute counterfactual methods for logistic regression
         handler.execute('lr', 'skl', clf=self.clf_lr)
+
         if self.do_marg:
             handler.execute('lr', 'blr_marg', samples=self.samples)
+
         handler.execute('lr', 'blr_mean', samples=self.samples)
+
         handler.execute(
             'lr', 'nice',
             clf=self.clf_lr,
@@ -723,6 +726,7 @@ class CFCalculations(CLFModels):
             cat_cols=self.cat_feat, #[i for i in range(5)], #[i for i in range(len(self.cat_feat))],
             num_cols=self.num_feat #[i for i in range(5,10)] #[i for i in range(len(self.num_feat))]
         )
+
         handler.execute(
             'lr', 'dice',
             clf=self.clf_lr,
@@ -753,6 +757,7 @@ class CFCalculations(CLFModels):
             cat_cols = self.cat_feat, #[i for i in range(5)],
             num_cols = self.num_feat #[i for i in range(5,10)]
         )
+        
         handler.execute(
             'rf', 'dice',
             clf=self.clf_rf,
