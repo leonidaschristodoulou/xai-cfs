@@ -478,7 +478,7 @@ class CFFunctionHandler:
         features = clf[0].named_steps['PP'].named_transformers_['cat'].get_feature_names_out()
         for feature in features:
             index, category = feature.split("_", 1)  # Split at first underscore
-            self.category_map[int(index[1])].append(category)  # Convert index to int and store
+            self.category_map[int(index[1:])].append(category)  # Convert index to int and store
             #category_map[index].append(category)  # Convert index to int and store
 
         # Convert defaultdict to regular dict
