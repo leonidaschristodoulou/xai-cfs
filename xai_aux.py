@@ -687,13 +687,14 @@ class CLFModels():
 
 
 class CFCalculations(CLFModels):
-    def __init__(self, df_train, y_train, df_test, y_test, cat_feat, num_feat, polytopes, do_marg=True, min_frequency=None):
+    def __init__(self, df_train, y_train, df_test, y_test, cat_feat, num_feat, polytopes, do_marg=True, do_dice=True, min_frequency=None):
         super().__init__(df_train, y_train, df_test, y_test, cat_feat, num_feat, min_frequency=None)  # Initialize the base class
         self.model_stats, self.models, self.cms = self.get_models()  # Train and retrieve models and associated data
         self.cat_feat = cat_feat
         self.num_feat = num_feat
         self.polytopes = polytopes
         self.do_marg = do_marg
+        self.do_dice = do_dice
         self.min_frequency = min_frequency
 
     def get_cfs(self):
@@ -727,11 +728,12 @@ class CFCalculations(CLFModels):
             num_cols=self.num_feat #[i for i in range(5,10)] #[i for i in range(len(self.num_feat))]
         )
 
-        handler.execute(
-            'lr', 'dice',
-            clf=self.clf_lr,
-            num_cols=[str(i) for i in self.num_feat] #[str(i) for i in range(5,10)]
-        )
+        if self.do_dice:
+            handler.execute(
+                'lr', 'dice',
+                clf=self.clf_lr,
+                num_cols=[str(i) for i in self.num_feat] #[str(i) for i in range(5,10)]
+            )
 
         # , clf, df_in, categorical_names, numerical_names, X_train, y_train, X_test, y_test
         handler.execute(
@@ -758,11 +760,12 @@ class CFCalculations(CLFModels):
             num_cols = self.num_feat #[i for i in range(5,10)]
         )
         
-        handler.execute(
-            'rf', 'dice',
-            clf=self.clf_rf,
-            num_cols=[str(i) for i in self.num_feat] #[str(i) for i in range(5,10)]
-        )
+        if self.do_dice:
+            handler.execute(
+                'rf', 'dice',
+                clf=self.clf_rf,
+                num_cols=[str(i) for i in self.num_feat] #[str(i) for i in range(5,10)]
+            )
 
         handler.execute(
             'rf', 'RL',
@@ -787,14 +790,16 @@ class CFCalculations(CLFModels):
             cat_cols = self.cat_feat, #[i for i in range(5)],
             num_cols = self.num_feat #[i for i in range(5,10)]
         )
-        handler.execute(
-            'tf', 'dice',
-            model=self.model,
-            x_train=self.df_train_tf,
-            x_test=self.df_test_tf,
-            num_cols=self.num_cols_tf,
-            cat_cols=self.cat_cols_tf
-        )
+
+        if self.do_dice:
+            handler.execute(
+                'tf', 'dice',
+                model=self.model,
+                x_train=self.df_train_tf,
+                x_test=self.df_test_tf,
+                num_cols=self.num_cols_tf,
+                cat_cols=self.cat_cols_tf
+            )
 
         # handler.execute(
         #     'tf', 'RL',
@@ -904,11 +909,12 @@ class CFCalculations(CLFModels):
                            self.df_test, 
                            'nice linear model')
 
-        process_pred_model(('lr', 'dice'), 
-                        self.clf_lr, 
-                        ('lr', 'dice'), 
-                        self.df_test, 
-                        'dice linear model')
+        if self.do_dice:
+            process_pred_model(('lr', 'dice'), 
+                            self.clf_lr, 
+                            ('lr', 'dice'), 
+                            self.df_test, 
+                            'dice linear model')
 
         process_pred_model(('lr', 'RL'), 
                         self.clf_lr_np, 
@@ -922,11 +928,12 @@ class CFCalculations(CLFModels):
                         self.df_test, 
                         'nice rf model')
 
-        process_pred_model(('rf', 'dice'), 
-                        self.clf_rf, 
-                        ('rf', 'dice'), 
-                        self.df_test, 
-                        'dice rf model')
+        if self.do_dice:
+            process_pred_model(('rf', 'dice'), 
+                            self.clf_rf, 
+                            ('rf', 'dice'), 
+                            self.df_test, 
+                            'dice rf model')
         
         process_pred_model(('rf', 'RL'), 
                         self.clf_rf_np, 
@@ -942,12 +949,13 @@ class CFCalculations(CLFModels):
                             self.df_test_tf, 
                             'nice tf model')
 
-        process_pred_model_tfd(('tf', 'dice'), 
-                            self.model, 
-                            self.clf_lr, 
-                            ('tf', 'dice'), 
-                            self.df_test_tf, 
-                            'dice tf model')
+        if self.do_dice:
+            process_pred_model_tfd(('tf', 'dice'), 
+                                self.model, 
+                                self.clf_lr, 
+                                ('tf', 'dice'), 
+                                self.df_test_tf, 
+                                'dice tf model')
 
         print("CFs checked")
         return self.good_cf_indices

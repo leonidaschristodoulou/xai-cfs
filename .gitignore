@@ -9,4 +9,10 @@ venv/
 # Ignore log files
 *.log
 
+# ignore data files
 data/
+
+# ingnore random notebooks
+tax.ipynb
+
+
