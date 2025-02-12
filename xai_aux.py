@@ -475,15 +475,15 @@ class CFFunctionHandler:
     def func_lr_rl(self, clf, df_in, categorical_names, numerical_names, X_train, y_train, X_test, y_test):
         print('Working on lr RL')
         self.category_map = defaultdict(list)
-        features = clf[0].named_steps['PP'].named_transformers_['cat'].get_feature_names_out()
-        for feature in features:
-            index, category = feature.split("_", 1)  # Split at first underscore
-            self.category_map[int(index[1:])].append(category)  # Convert index to int and store
-            #category_map[index].append(category)  # Convert index to int and store
+        if len(categorical_names)>0:
+            features = clf[0].named_steps['PP'].named_transformers_['cat'].get_feature_names_out()
+            for feature in features:
+                index, category = feature.split("_", 1)  # Split at first underscore
+                self.category_map[int(index[1:])].append(category)  # Convert index to int and store
+                #category_map[index].append(category)  # Convert index to int and store
 
-        # Convert defaultdict to regular dict
-        self.category_map = dict(self.category_map)
-        #category_map = {i:list(df_in[str(i)].unique()) for i in range(len(categorical_names))}
+            # Convert defaultdict to regular dict
+            self.category_map = dict(self.category_map)
         out = generate_rl_counterfactuals(X_train, y_train, X_test, y_test, categorical_names, numerical_names, self.category_map, clf,'sk')
         return out.data['cf']['X']
     
