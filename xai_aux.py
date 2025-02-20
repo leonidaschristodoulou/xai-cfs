@@ -306,7 +306,11 @@ def get_nice_cf(clf,x_train_in, y_train, x_test, cat_feat, num_feat):
     # explain an instance
     lr_nice_cf = []
     for i in range(len(x_test)):
-        lr_nice_cf.append(NICE_explainer.explain(x_test[i].reshape(1,-1))[0])
+        try:
+            lr_nice_cf.append(NICE_explainer.explain(x_test[i].reshape(1,-1))[0])
+        except ValueError as e:
+            print(f"Skipping instance {i} due to error: {e}")
+            lr_nice_cf.append(x_test[i])
     return lr_nice_cf
 
 def get_nice_cf_tf(model,x_train, y_train, x_test, cat_feat, num_feat):
@@ -347,7 +351,11 @@ def get_dice_clf_sklearn_cf(clf, df_train, df_test, continuous_features, outcome
                                      )
     x_test_dice_cf_base = []
     for i in range(len(df_test)):
-        x_test_dice_cf_base.append(e.cf_examples_list[i].final_cfs_df.values[0])
+        try:
+            x_test_dice_cf_base.append(e.cf_examples_list[i].final_cfs_df.values[0])
+        except AttributeError:
+            print(f"Skipping instance {i} due to error: {e}")
+            x_test_dice_cf_base.append(df_test.iloc[i].values)
     return np.array(x_test_dice_cf_base)[:,:-1] # we dont need to keep the last columnm which is the opposite outcome
     
 def get_dice_clf_tf_cf(model, x_train, x_test, cont_feat, cat_feat, target):
