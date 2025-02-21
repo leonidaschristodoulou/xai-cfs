@@ -355,8 +355,17 @@ def get_dice_clf_sklearn_cf(clf, df_train, df_test, continuous_features, outcome
             x_test_dice_cf_base.append(e.cf_examples_list[i].final_cfs_df.values[0])
         except AttributeError:
             print(f"Skipping instance {i} due to error: {e}")
-            x_test_dice_cf_base.append(df_test.iloc[i].values)
-    return np.array(x_test_dice_cf_base)[:,:-1] # we dont need to keep the last columnm which is the opposite outcome
+            x_test_dice_cf_base.append(df_test.iloc[i].values[:-1])
+    try:
+        arr = np.array(x_test_dice_cf_base, dtype=object)  # Prevents automatic shape enforcement
+        arr = np.stack(arr)  # Ensures a strict 2D NumPy array
+        return arr[:, :-1]  # Slices as expected if successful - # we dont need to keep the last columnm which is the opposite outcome
+    except ValueError as e:
+        print("ValueError encountered:", e)
+        print("Possible shape inconsistency in x_test_dice_cf_base")
+        return None  # Returns None in case of an error
+
+    #return np.array(x_test_dice_cf_base)[:,:-1] 
     
 def get_dice_clf_tf_cf(model, x_train, x_test, cont_feat, cat_feat, target):
     # my undertanding is that backend TF2 uses the weights gradient. Why it crushes when I pass
