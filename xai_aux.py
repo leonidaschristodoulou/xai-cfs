@@ -334,8 +334,15 @@ def get_nice_cf_tf(model,x_train, y_train, x_test, cat_feat, num_feat):
     # explain an instance
     tf_nice_cf = []
     for i in range(len(x_test)):
-        tf_nice_cf.append(NICE_explainer.explain(x_test[i:i+1]))
-    return np.array(tf_nice_cf)[:,0,:]
+        try:
+            tf_nice_cf.append(NICE_explainer.explain(x_test[i:i+1]))
+        except ValueError as e:
+            print(f"Skipping instance {i} due to error: {e}")
+            tf_nice_cf.append(x_test[i:i+1])
+    try:
+        return np.array(tf_nice_cf)[:,0,:]
+    except IndexError:
+        return np.array(tf_nice_cf)
 
 def get_dice_clf_sklearn_cf(clf, df_train, df_test, continuous_features, outcome_name, n_dice_cfs=1):
     df_train[continuous_features] = df_train[continuous_features].astype(float) # somehow otherwise dice fails in this step 
@@ -353,9 +360,14 @@ def get_dice_clf_sklearn_cf(clf, df_train, df_test, continuous_features, outcome
     for i in range(len(df_test)):
         try:
             x_test_dice_cf_base.append(e.cf_examples_list[i].final_cfs_df.values[0])
+            if i==0:
+                print(e.cf_examples_list[i].final_cfs_df.values[0])
         except AttributeError:
             print(f"Skipping instance {i} due to error: {e}")
-            x_test_dice_cf_base.append(df_test.iloc[i].values[:-1])
+            # here we have an issue as dice returns the outcome. We 
+            # we thus append a nan value so it doesn't crush later. 
+            x_test_dice_cf_base.append(np.append(df_test.iloc[i].values,np.nan))
+            print(df_test.iloc[i].values)
     try:
         arr = np.array(x_test_dice_cf_base, dtype=object)  # Prevents automatic shape enforcement
         arr = np.stack(arr)  # Ensures a strict 2D NumPy array
@@ -388,7 +400,12 @@ def get_dice_clf_tf_cf(model, x_train, x_test, cont_feat, cat_feat, target):
     
     x_test_tf_dice_cf_base = []
     for i in range(len(x_test)):
-        x_test_tf_dice_cf_base.append(e.cf_examples_list[i].final_cfs_df.values[0])
+        try:
+            x_test_tf_dice_cf_base.append(e.cf_examples_list[i].final_cfs_df.values[0])
+        except AttributeError:
+            print(f"Skipping instance {i} due to error: {e}")
+            x_test_tf_dice_cf_base.append(np.append(x_test.iloc[i].values,np.nan))
+            print(x_test[i].values)
     return np.array(x_test_tf_dice_cf_base)[:,:-1] # we don't need the target column
 
 def fun_get_false_cf_indices(y_pred, y_cf_pred, model_desc):
@@ -427,6 +444,14 @@ def fun_check_cf_pred_model(model, cfs, x_test, model_desc):
         return np.full(len(y_cf_pred), True) #np.arange(len(y_cf_pred))
     else:
         good_cf_indices = fun_get_false_cf_indices(y_pred, y_cf_pred, model_desc)
+
+        # Ensure good_cf_indices is a boolean array of the same shape as y_cf_pred
+        good_cf_indices = np.asarray(good_cf_indices, dtype=bool)
+        
+        # If all CFs are wrong, ensure the output matches y_cf_pred shape
+        if good_cf_indices.size == 0:
+            return np.full(y_cf_pred.shape, False, dtype=bool)  # Mark all as bad
+
         return good_cf_indices
 
 class ModelEvaluator:
