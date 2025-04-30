@@ -15,5 +15,6 @@ data/
 
 # ingnore random notebooks
 tax.ipynb
-
-
+*.png
+plots/
+xai_runs_fraud.ipynb
